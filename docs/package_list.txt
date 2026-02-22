@@ -1,0 +1,26 @@
+# R Packages Required for SEDAP Room
+#
+# -- Data handling --
+data.table       # Fast data manipulation (essential for large census data)
+haven            # SAS file import/export (.sas7bdat)
+#
+# -- Modeling --
+mgcv             # GAMs (Generalized Additive Models)
+ranger           # Random Forest
+xgboost          # Gradient Boosting
+pROC             # ROC analysis
+#
+# -- Explainability --
+DALEX            # Model-agnostic explanations
+iml              # Interpretable ML (SHAP, PDP)
+#
+# -- Optimization --
+ompr             # Mixed-Integer Linear Programming modeling
+ompr.roi         # ROI solver interface for ompr
+ROI.plugin.glpk  # GLPK solver backend
+#
+# -- Visualization --
+ggplot2          # Plotting
+#
+# -- Utilities --
+Matrix           # Sparse matrices (dependency for many packages)
