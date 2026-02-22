@@ -17,7 +17,7 @@ ETAPA_CODES <- list(
 # All codes relevant for dropout study (excludes Educação Infantil)
 ETAPA_STUDY <- unlist(ETAPA_CODES, use.names = FALSE)
 
-# Expected age (reference) for each seriado etapa code
+# Expected age for each seriado etapa code
 # Returns NA for non-seriado codes (Multi, Correção, EJA)
 get_expected_age <- function(tp_etapa) {
   mapping <- c(
@@ -68,7 +68,6 @@ classify_etapa <- function(tp_etapa) {
 # -- Municipality / Region lookups --------------------------------------------
 
 # Sample of real IBGE municipality codes grouped by region
-# (CO_MUNICIPIO is 7 digits; first 2 = CO_UF)
 SAMPLE_MUNICIPIOS <- data.frame(
   CO_MUNICIPIO = c(
     # Norte (region 1)
@@ -96,7 +95,7 @@ SAMPLE_MUNICIPIOS <- data.frame(
 SAMPLE_MUNICIPIOS$CO_UF    <- as.integer(SAMPLE_MUNICIPIOS$CO_MUNICIPIO %/% 1e5L)
 SAMPLE_MUNICIPIOS$CO_REGIAO <- as.integer(SAMPLE_MUNICIPIOS$CO_UF %/% 10L)
 
-# Region population weights (approximate, for sampling)
+# Region population weights
 REGION_WEIGHTS <- c("1" = 0.09, "2" = 0.27, "3" = 0.42, "4" = 0.14, "5" = 0.08)
 
 # Lookup CO_UF from CO_MUNICIPIO

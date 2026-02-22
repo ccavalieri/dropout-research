@@ -1,9 +1,8 @@
 # =============================================================================
 # generate_synthetic_data.R
-# Generates structurally faithful synthetic datasets mirroring INEP's Censo
+# Generates synthetic datasets mirroring INEP's Censo
 # Escolar schema (BAS_ESCOLA, BAS_TURMA, BAS_MATRICULA, BAS_SITUACAO).
 #
-# Embeds realistic dropout signal via logistic model.
 # Supports 3 size modes: "small" (1K), "medium" (50K), "large" (500K+).
 # Outputs semicolon-separated CSV (UTF-8) and .sas7bdat files.
 #
@@ -48,7 +47,7 @@ PARAMS <- switch(SIZE_MODE,
   large  = list(n_schools = 3000, n_students = 500000, classes_per_school = c(5, 20))
 )
 
-# Dropout logistic model coefficients (from literature)
+# Dropout logistic model coefficients
 BETA <- list(
   intercept       = -3.5,   # base log-odds (~3% baseline)
   age_distortion  =  0.30,  # per year of distortion
@@ -59,7 +58,7 @@ BETA <- list(
   eja             =  0.50,
   medio           =  0.35,
   low_infra       =  0.25,
-  disability      = -0.10   # inclusive schools may retain
+  disability      = -0.10   
 )
 
 SEED <- 42L
@@ -70,13 +69,13 @@ cat(sprintf("[%s] Generating synthetic data — mode: %s, students: %d, schools:
 
 
 # =============================================================================
-# LAYER 1: BAS_ESCOLA (School Universe)
+# LAYER 1: BAS_ESCOLA
 # =============================================================================
 
 generate_schools <- function(n_schools) {
-  cat(sprintf("[%s] Layer 1: Generating %d schools...\n", Sys.time(), n_schools))
+  cat(sprintf("[%s] Layer 1: Generating %d schools\n", Sys.time(), n_schools))
 
-  # Sample municipalities weighted by region population
+  # Sample cities weighted by region population
   muni_pool <- SAMPLE_MUNICIPIOS
   region_w  <- REGION_WEIGHTS[as.character(muni_pool$CO_REGIAO)]
   muni_idx  <- sample(seq_len(nrow(muni_pool)), n_schools, replace = TRUE, prob = region_w)
@@ -106,7 +105,7 @@ generate_schools <- function(n_schools) {
   schools[, TP_SITUACAO_FUNCIONAMENTO := 1L]  # all active
   schools[, NO_ENTIDADE := paste0("ESCOLA SINTETICA ", CO_ENTIDADE)]
 
-  # Infrastructure flags (correlated with dependency and location)
+  # Infrastructure flags
   is_better <- schools$TP_DEPENDENCIA %in% c(1L, 4L) | schools$TP_LOCALIZACAO == 1L
   p_good <- ifelse(is_better, 0.85, 0.45)
 
@@ -124,7 +123,7 @@ generate_schools <- function(n_schools) {
     schools[, (col) := as.integer(rbinom(.N, 1, p_good))]
   }
 
-  # Energy/water absence flags (inverse of presence)
+  # Energy/water absence flags
   schools[, IN_ENERGIA_INEXISTENTE := fifelse(IN_ENERGIA_REDE_PUBLICA == 0L,
                                                as.integer(rbinom(.N, 1, 0.3)), 0L)]
   schools[, IN_AGUA_INEXISTENTE := fifelse(IN_AGUA_POTAVEL == 0L,
@@ -157,7 +156,7 @@ generate_schools <- function(n_schools) {
   schools[, IN_COMUM_FUND_AF := as.integer(rbinom(.N, 1, 0.60))]
   schools[, IN_COMUM_MEDIO_MEDIO := as.integer(rbinom(.N, 1, 0.35))]
 
-  # School-level infrastructure score (internal, for dropout model)
+  # School-level infrastructure score
   schools[, .infra_score := rowMeans(.SD),
           .SDcols = c("IN_AGUA_POTAVEL", "IN_ENERGIA_REDE_PUBLICA",
                        "IN_BIBLIOTECA", "IN_LABORATORIO_INFORMATICA",
@@ -168,11 +167,11 @@ generate_schools <- function(n_schools) {
 
 
 # =============================================================================
-# LAYER 2: BAS_TURMA (Classes)
+# LAYER 2: BAS_TURMA
 # =============================================================================
 
 generate_turmas <- function(schools, year) {
-  cat(sprintf("[%s] Layer 2: Generating turmas for %d...\n", Sys.time(), year))
+  cat(sprintf("[%s] Layer 2: Generating turmas for %d\n", Sys.time(), year))
 
   n_classes <- as.integer(runif(nrow(schools),
                                 PARAMS$classes_per_school[1],
@@ -182,7 +181,7 @@ generate_turmas <- function(schools, year) {
     s <- schools[i]
     nc <- n_classes[i]
 
-    # Assign etapas based on what this school offers
+    # Assign based on what this school offers
     available_etapas <- c()
     if (s$IN_COMUM_FUND_AI == 1L) available_etapas <- c(available_etapas, ETAPA_CODES$fund_ai)
     if (s$IN_COMUM_FUND_AF == 1L) available_etapas <- c(available_etapas, ETAPA_CODES$fund_af)
@@ -197,8 +196,8 @@ generate_turmas <- function(schools, year) {
       ID_TURMA      = paste0(year, s$CO_ENTIDADE, sprintf("%03d", seq_len(nc))),
       CO_ENTIDADE   = s$CO_ENTIDADE,
       TP_ETAPA_ENSINO = etapas,
-      TP_MEDIACAO_DIDATICO_PEDAGO = 1L,  # presencial
-      TP_TIPO_ATENDIMENTO_TURMA = 1L,    # escolarização
+      TP_MEDIACAO_DIDATICO_PEDAGO = 1L, 
+      TP_TIPO_ATENDIMENTO_TURMA = 1L,  
       NU_DURACAO_TURMA = as.integer(sample(200:300, nc, replace = TRUE)),
       NU_DIAS_ATIVIDADE = sample(4:5, nc, replace = TRUE)
     )
@@ -214,7 +213,7 @@ generate_turmas <- function(schools, year) {
 # =============================================================================
 
 generate_student_pool <- function(n_students, schools) {
-  cat(sprintf("[%s] Layer 3: Generating %d student profiles...\n", Sys.time(), n_students))
+  cat(sprintf("[%s] Layer 3: Generating %d student profiles\n", Sys.time(), n_students))
 
   # Assign students to schools (weighted by school size)
   school_weights <- schools$QT_SALAS_UTILIZADAS / sum(schools$QT_SALAS_UTILIZADAS)
@@ -231,7 +230,7 @@ generate_student_pool <- function(n_students, schools) {
     IN_NECESSIDADE_ESPECIAL = as.integer(rbinom(n_students, 1, 0.04))
   )
 
-  # Disability sub-flags (conditional on IN_NECESSIDADE_ESPECIAL)
+  # Disability sub-flags
   disability_cols <- c("IN_BAIXA_VISAO", "IN_CEGUEIRA", "IN_DEF_AUDITIVA",
                         "IN_DEF_FISICA", "IN_DEF_INTELECTUAL", "IN_SURDEZ",
                         "IN_SURDOCEGUEIRA", "IN_DEF_MULTIPLA",
@@ -260,13 +259,13 @@ generate_student_pool <- function(n_students, schools) {
 
   students[, TP_ETAPA_ENSINO_START := as.integer(starting_etapas)]
 
-  # Assign coherent starting age (expected + small distortion)
+  # Assign starting age (expected + small distortion)
   expected_ages <- get_expected_age(students$TP_ETAPA_ENSINO_START)
   expected_ages[is.na(expected_ages)] <- sample(15:40, sum(is.na(expected_ages)), replace = TRUE)
   students[, NU_IDADE_START := as.integer(pmax(5, expected_ages + sample(-1:3, .N, replace = TRUE,
                                                                           prob = c(0.10, 0.50, 0.25, 0.10, 0.05))))]
 
-  # Residence location (from school's municipality by default)
+  # Residence location
   students <- merge(students,
                     schools[, .(CO_ENTIDADE, CO_MUNICIPIO, CO_UF, CO_REGIAO,
                                 TP_LOCALIZACAO, .infra_score)],
@@ -297,7 +296,7 @@ generate_student_pool <- function(n_students, schools) {
 # =============================================================================
 
 simulate_longitudinal <- function(students, schools, turmas_by_year) {
-  cat(sprintf("[%s] Layers 4-6: Simulating longitudinal trajectories...\n", Sys.time()))
+  cat(sprintf("[%s] Layers 4-6: Simulating longitudinal trajectories\n", Sys.time()))
 
   all_matriculas <- list()
   all_situacoes  <- list()
@@ -385,7 +384,7 @@ simulate_longitudinal <- function(students, schools, turmas_by_year) {
       IN_PROFISSIONALIZANTE = 0L,
       IN_ESPECIAL_EXCLUSIVA = 0L,
       TP_MEDIACAO_DIDATICO_PEDAGO = 1L,
-      # School context columns (denormalized in real data)
+      # School context columns
       CO_REGIAO          = sch_info$CO_REGIAO,
       CO_UF              = sch_info$CO_UF,
       CO_MUNICIPIO       = sch_info$CO_MUNICIPIO,
