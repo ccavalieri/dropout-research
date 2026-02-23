@@ -1,0 +1,6 @@
+[2026-02-23 06:12:25] [INFO] === Pipeline Configuration Loaded === 
+[2026-02-23 06:12:25] [INFO] Project root:  /Users/cc9/Documents/GitHub/dropout-research 
+[2026-02-23 06:12:25] [INFO] Data source:   /Users/cc9/Documents/GitHub/dropout-research/data/synthetic (csv) 
+[2026-02-23 06:12:25] [INFO] Synthetic:     TRUE 
+[2026-02-23 06:12:25] [INFO] Years:         2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-23 06:12:25] [INFO] Dropout def:   strict 
