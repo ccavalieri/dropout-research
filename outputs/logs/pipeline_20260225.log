@@ -1,0 +1,29 @@
+[2026-02-25 06:14:33] [INFO] === Pipeline Configuration Loaded === 
+[2026-02-25 06:14:33] [INFO] Project root:  /Users/cc9/Documents/GitHub/dropout-research 
+[2026-02-25 06:14:33] [INFO] Data source:   /Users/cc9/Documents/GitHub/dropout-research/data/synthetic (csv) 
+[2026-02-25 06:14:33] [INFO] Synthetic:     TRUE 
+[2026-02-25 06:14:33] [INFO] Years:         2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-25 06:14:33] [INFO] Dropout def:   strict 
+[2026-02-25 06:14:33] [INFO] ================================================== 
+[2026-02-25 06:14:33] [INFO] STEP 01: Load and Validate 
+[2026-02-25 06:14:33] [INFO] ================================================== 
+[2026-02-25 06:14:33] [INFO] Data directory: /Users/cc9/Documents/GitHub/dropout-research/data/synthetic 
+[2026-02-25 06:14:33] [INFO] Data format:    csv 
+[2026-02-25 06:14:33] [INFO] Tables:         BAS_ESCOLA, BAS_TURMA, BAS_MATRICULA, BAS_SITUACAO 
+[2026-02-25 06:14:33] [INFO] Loading BAS_ESCOLA from BAS_ESCOLA.csv ... 
+[2026-02-25 06:14:33] [INFO]   BAS_ESCOLA: 1200 rows x 48 cols 
+[2026-02-25 06:14:33] [INFO] Loading BAS_TURMA from BAS_TURMA.csv ... 
+[2026-02-25 06:14:33] [INFO]   BAS_TURMA: 4153 rows x 8 cols 
+[2026-02-25 06:14:33] [INFO] Loading BAS_MATRICULA from BAS_MATRICULA.csv ... 
+[2026-02-25 06:14:33] [INFO]   BAS_MATRICULA: 4215 rows x 38 cols 
+[2026-02-25 06:14:33] [INFO] Loading BAS_SITUACAO from BAS_SITUACAO.csv ... 
+[2026-02-25 06:14:33] [INFO]   BAS_SITUACAO: 3698 rows x 12 cols 
+[2026-02-25 06:14:33] [INFO] --- Column validation --- 
+[2026-02-25 06:14:33] [ERROR]   [FAIL] BAS_ESCOLA — missing columns: IN_SALA_ATENDIMENTO_ESPECIAL 
+[2026-02-25 06:14:33] [INFO]          BAS_ESCOLA — 30 extra columns available 
+[2026-02-25 06:14:33] [ERROR]   [FAIL] BAS_TURMA — missing columns: TP_MEDIACAO_DIDATICO_PEDAGOGICA, NU_MATRICULAS 
+[2026-02-25 06:14:33] [INFO]          BAS_TURMA — 3 extra columns available 
+[2026-02-25 06:14:33] [INFO]   [OK]   BAS_MATRICULA — all 13 required columns present 
+[2026-02-25 06:14:33] [INFO]          BAS_MATRICULA — 25 extra columns available 
+[2026-02-25 06:14:33] [INFO]   [OK]   BAS_SITUACAO — all 4 required columns present 
+[2026-02-25 06:14:33] [INFO]          BAS_SITUACAO — 8 extra columns available 
