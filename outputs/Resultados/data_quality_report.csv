@@ -1,0 +1,19 @@
+section;item;value;detail
+missingness;TP_RESPONSAVEL_TRANSPORTE;74.5;3,140 / 4,215 rows
+missingness;school_dropout_rate_prev;24.13;1,017 / 4,215 rows
+missingness;TP_SITUACAO;12.27;517 / 4,215 rows
+missingness;IN_CONCLUINTE;12.27;517 / 4,215 rows
+missingness;IN_TRANSFERIDO;12.27;517 / 4,215 rows
+missingness;dropout;12.27;517 / 4,215 rows
+missingness;TP_COR_RACA;5.1;215 / 4,215 rows
+missingness;TP_ZONA_RESIDENCIAL;4.96;209 / 4,215 rows
+inconsistency;age_too_young;0;0.00% of rows
+inconsistency;age_too_old;0;0.00% of rows
+inconsistency;orphan_disability;0;0.00% of rows
+inconsistency;orphan_transport;0;0.00% of rows
+inconsistency;eja_mismatch;0;0.00% of rows
+inconsistency;duplicate_enrollments;0;0.00% of rows
+dimensions;rows;4215;""
+dimensions;columns;96;""
+dimensions;unique_students;1250;""
+dimensions;years;6;2019,2020,2021,2022,2023,2024
