@@ -36,3 +36,99 @@
 [2026-02-25 06:23:59] [INFO] ================================================== 
 [2026-02-25 06:23:59] [INFO] STEP 02: Merge Tables 
 [2026-02-25 06:23:59] [INFO] ================================================== 
+[2026-02-25 06:25:48] [INFO] === Pipeline Configuration Loaded === 
+[2026-02-25 06:25:48] [INFO] Project root:  /Users/cc9/Documents/GitHub/dropout-research 
+[2026-02-25 06:25:48] [INFO] Data source:   /Users/cc9/Documents/GitHub/dropout-research/data/synthetic (csv) 
+[2026-02-25 06:25:48] [INFO] Synthetic:     TRUE 
+[2026-02-25 06:25:48] [INFO] Years:         2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-25 06:25:48] [INFO] Dropout def:   strict 
+[2026-02-25 06:25:48] [INFO] ================================================== 
+[2026-02-25 06:25:48] [INFO] STEP 01: Load and Validate 
+[2026-02-25 06:25:48] [INFO] ================================================== 
+[2026-02-25 06:25:48] [INFO] Data directory: /Users/cc9/Documents/GitHub/dropout-research/data/synthetic 
+[2026-02-25 06:25:48] [INFO] Data format:    csv 
+[2026-02-25 06:25:48] [INFO] Tables:         BAS_ESCOLA, BAS_TURMA, BAS_MATRICULA, BAS_SITUACAO 
+[2026-02-25 06:25:48] [INFO] Loading BAS_ESCOLA from BAS_ESCOLA.csv ... 
+[2026-02-25 06:25:48] [INFO]   BAS_ESCOLA: 1200 rows x 48 cols 
+[2026-02-25 06:25:48] [INFO] Loading BAS_TURMA from BAS_TURMA.csv ... 
+[2026-02-25 06:25:48] [INFO]   BAS_TURMA: 4153 rows x 8 cols 
+[2026-02-25 06:25:48] [INFO] Loading BAS_MATRICULA from BAS_MATRICULA.csv ... 
+[2026-02-25 06:25:48] [INFO]   BAS_MATRICULA: 4215 rows x 38 cols 
+[2026-02-25 06:25:48] [INFO] Loading BAS_SITUACAO from BAS_SITUACAO.csv ... 
+[2026-02-25 06:25:48] [INFO]   BAS_SITUACAO: 3698 rows x 12 cols 
+[2026-02-25 06:25:48] [INFO] --- Column validation --- 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_ESCOLA — all 18 required columns present 
+[2026-02-25 06:25:48] [INFO]          BAS_ESCOLA — 30 extra columns available 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_TURMA — all 5 required columns present 
+[2026-02-25 06:25:48] [INFO]          BAS_TURMA — 3 extra columns available 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_MATRICULA — all 13 required columns present 
+[2026-02-25 06:25:48] [INFO]          BAS_MATRICULA — 25 extra columns available 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_SITUACAO — all 4 required columns present 
+[2026-02-25 06:25:48] [INFO]          BAS_SITUACAO — 8 extra columns available 
+[2026-02-25 06:25:48] [INFO] --- Year coverage --- 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_ESCOLA — years: 2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_TURMA — years: 2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_MATRICULA — years: 2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_SITUACAO — years: 2019, 2020, 2021, 2022, 2023 
+[2026-02-25 06:25:48] [INFO] --- Key column checks --- 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_MATRICULA — CO_PESSOA_FISICA complete 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_SITUACAO — CO_PESSOA_FISICA complete 
+[2026-02-25 06:25:48] [INFO]   [OK]   BAS_SITUACAO — TP_SITUACAO values valid 
+[2026-02-25 06:25:48] [INFO] --- Row counts per year --- 
+[2026-02-25 06:25:48] [INFO]   BAS_ESCOLA  2019: 200 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_ESCOLA  2020: 200 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_ESCOLA  2021: 200 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_ESCOLA  2022: 200 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_ESCOLA  2023: 200 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_ESCOLA  2024: 200 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_TURMA  2019: 683 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_TURMA  2020: 692 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_TURMA  2021: 693 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_TURMA  2022: 711 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_TURMA  2023: 694 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_TURMA  2024: 680 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_MATRICULA  2019: 1,000 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_MATRICULA  2020: 788 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_MATRICULA  2021: 709 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_MATRICULA  2022: 627 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_MATRICULA  2023: 574 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_MATRICULA  2024: 517 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_SITUACAO  2019: 1,000 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_SITUACAO  2020: 788 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_SITUACAO  2021: 709 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_SITUACAO  2022: 627 rows 
+[2026-02-25 06:25:48] [INFO]   BAS_SITUACAO  2023: 574 rows 
+[2026-02-25 06:25:48] [INFO] --- Saving checkpoints --- 
+[2026-02-25 06:25:48] [INFO]   Saved BAS_ESCOLA -> 01_BAS_ESCOLA.rds 
+[2026-02-25 06:25:48] [INFO]   Saved BAS_TURMA -> 01_BAS_TURMA.rds 
+[2026-02-25 06:25:48] [INFO]   Saved BAS_MATRICULA -> 01_BAS_MATRICULA.rds 
+[2026-02-25 06:25:48] [INFO]   Saved BAS_SITUACAO -> 01_BAS_SITUACAO.rds 
+[2026-02-25 06:25:48] [INFO] Step 01 complete. 
+[2026-02-25 06:26:07] [INFO] === Pipeline Configuration Loaded === 
+[2026-02-25 06:26:07] [INFO] Project root:  /Users/cc9/Documents/GitHub/dropout-research 
+[2026-02-25 06:26:07] [INFO] Data source:   /Users/cc9/Documents/GitHub/dropout-research/data/synthetic (csv) 
+[2026-02-25 06:26:07] [INFO] Synthetic:     TRUE 
+[2026-02-25 06:26:07] [INFO] Years:         2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-25 06:26:07] [INFO] Dropout def:   strict 
+[2026-02-25 06:26:07] [INFO] ================================================== 
+[2026-02-25 06:26:07] [INFO] STEP 02: Merge Tables 
+[2026-02-25 06:26:07] [INFO] ================================================== 
+[2026-02-25 06:26:07] [INFO] Loaded: ESCOLA=1,200, TURMA=4,153, MATRICULA=4,215, SITUACAO=3,698 
+[2026-02-25 06:26:07] [INFO] --- Referential integrity --- 
+[2026-02-25 06:26:07] [INFO]   [OK]   All MATRICULA schools found in ESCOLA 
+[2026-02-25 06:26:07] [INFO]   [OK]   All MATRICULA turmas found in TURMA 
+[2026-02-25 06:26:07] [INFO]   [OK]   All SITUACAO records matched in MATRICULA 
+[2026-02-25 06:26:07] [INFO] --- Preparing joins --- 
+[2026-02-25 06:26:07] [INFO]   ESCOLA: bringing 36 feature columns 
+[2026-02-25 06:26:07] [INFO]   TURMA:  bringing 3 feature columns 
+[2026-02-25 06:26:07] [INFO]   SITUACAO: bringing 3 feature columns 
+[2026-02-25 06:26:07] [INFO] --- Merging --- 
+[2026-02-25 06:26:07] [INFO]   + ESCOLA:   4,215 rows (was 4,215) 
+[2026-02-25 06:26:07] [INFO]   + TURMA:    4,215 rows (was 4,215) 
+[2026-02-25 06:26:07] [INFO]   + SITUACAO: 4,215 rows (was 4,215) 
+[2026-02-25 06:26:07] [INFO] --- Post-merge validation --- 
+[2026-02-25 06:26:07] [INFO]   [OK]   Row count preserved: 4,215 
+[2026-02-25 06:26:07] [INFO]   TP_SITUACAO: 3,698 with outcome, 517 without (expected for 2024) 
+[2026-02-25 06:26:07] [INFO]   Final dataset: 4,215 rows x 80 columns 
+[2026-02-25 06:26:07] [INFO] Checkpoint saved: 02_merged.rds 
+[2026-02-25 06:26:07] [INFO] Step 02 complete. 
