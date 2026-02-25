@@ -132,3 +132,39 @@
 [2026-02-25 06:26:07] [INFO]   Final dataset: 4,215 rows x 80 columns 
 [2026-02-25 06:26:07] [INFO] Checkpoint saved: 02_merged.rds 
 [2026-02-25 06:26:07] [INFO] Step 02 complete. 
+[2026-02-25 06:33:33] [INFO] === Pipeline Configuration Loaded === 
+[2026-02-25 06:33:33] [INFO] Project root:  /Users/cc9/Documents/GitHub/dropout-research 
+[2026-02-25 06:33:33] [INFO] Data source:   /Users/cc9/Documents/GitHub/dropout-research/data/synthetic (csv) 
+[2026-02-25 06:33:33] [INFO] Synthetic:     TRUE 
+[2026-02-25 06:33:33] [INFO] Years:         2019, 2020, 2021, 2022, 2023, 2024 
+[2026-02-25 06:33:33] [INFO] Dropout def:   strict 
+[2026-02-25 06:33:33] [INFO] ================================================== 
+[2026-02-25 06:33:33] [INFO] STEP 03: Feature Engineering 
+[2026-02-25 06:33:33] [INFO] ================================================== 
+[2026-02-25 06:33:33] [INFO] Loaded merged data: 4,215 rows x 80 cols 
+[2026-02-25 06:33:33] [INFO] --- Age-grade distortion --- 
+[2026-02-25 06:33:33] [INFO]   Mean distortion: 0.54 years 
+[2026-02-25 06:33:33] [INFO]   Overage (2+ years): 14.9% 
+[2026-02-25 06:33:33] [INFO] --- Etapa classification --- 
+[2026-02-25 06:33:33] [INFO]   Levels: eja_fund, eja_medio, fund_af, fund_ai, medio 
+[2026-02-25 06:33:33] [INFO] --- Infrastructure score --- 
+[2026-02-25 06:33:33] [INFO]   Computed from 8/9 columns, mean=0.79 
+[2026-02-25 06:33:33] [INFO] --- Target variable --- 
+[2026-02-25 06:33:33] [INFO]   Dropout definition: strict 
+[2026-02-25 06:33:33] [INFO]   Labelled: 3,698 (5.1% dropout) 
+[2026-02-25 06:33:33] [INFO]   Unlabelled (no situacao): 517 
+[2026-02-25 06:33:33] [INFO] --- Longitudinal features --- 
+[2026-02-25 06:33:33] [INFO]   Computing prior-year outcome... 
+[2026-02-25 06:33:33] [INFO]   Prior outcome matched: 2,949 / 4,215 rows 
+[2026-02-25 06:33:33] [INFO]   School changes: 0 (0.0%) 
+[2026-02-25 06:33:33] [INFO]   Computing cumulative retention count... 
+[2026-02-25 06:33:33] [INFO]   Max retentions: 3, mean: 0.08 
+[2026-02-25 06:33:33] [INFO]   Computing enrollment history length... 
+[2026-02-25 06:33:33] [INFO] --- School-level dropout rate (prior year) --- 
+[2026-02-25 06:33:33] [INFO]   Matched: 3,198 / 4,215 rows (first year has no prior rate) 
+[2026-02-25 06:33:33] [INFO] --- Demographic indicators --- 
+[2026-02-25 06:33:33] [INFO] --- Cleanup --- 
+[2026-02-25 06:33:33] [INFO]   Created 16 feature columns 
+[2026-02-25 06:33:33] [INFO]   Final dataset: 4,215 rows x 96 cols 
+[2026-02-25 06:33:33] [INFO] Checkpoint saved: 03_features.rds 
+[2026-02-25 06:33:33] [INFO] Step 03 complete. 
