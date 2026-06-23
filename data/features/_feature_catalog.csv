@@ -1,0 +1,16 @@
+﻿feature;grupo;origem
+defasagem_idade_serie;individual;gerada
+flag_defasado;individual;gerada
+n_reprovacoes_prev;temporal;gerada
+reprovou_ano_ant;temporal;gerada
+abandono_previo;temporal;gerada
+anos_observados;temporal;gerada
+tem_historico;temporal;gerada
+mudou_municipio;comunitario;gerada
+IN_TROCA_ESCOLA;temporal;gerada
+QT_ESCOLAS_ANO;temporal;gerada
+turno;escolar;gerada
+tamanho_turma;escolar;original
+tamanho_escola;escolar;gerada
+indice_infra;escolar;gerada
+apoio_por_aluno;escolar;gerada
