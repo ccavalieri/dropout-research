@@ -52,7 +52,7 @@ COLS <- list(
   BAS_TURMA = c(
     "NU_ANO", "ID_TURMA", "TP_MEDIACAO_DIDATICO_PEDAGO", "NU_DIAS_ATIVIDADE",
     "TP_ETAPA_ENSINO", "IN_REGULAR", "IN_EJA", "IN_PROFISSIONALIZANTE",
-    "QT_MATRICULAS", "CO_ENTIDADE"
+    "QT_MATRICULAS", "TX_HR_INICIAL", "CO_ENTIDADE"
   ),
   BAS_MATRICULA = c(
     "NU_ANO", "CO_PESSOA_FISICA", "ID_MATRICULA", "NU_IDADE_REFERENCIA",
@@ -101,10 +101,12 @@ dir.create(OUTPUT_DIR, showWarnings = FALSE, recursive = TRUE)
 #   CO_*, ID_*  -> character
 #   IN_*, TP_*  -> integer code
 #   QT_*, NU_*  -> numeric
+#   TX_HR_INICIAL is the class start hour and is numeric despite the TX_ prefix.
 is_code <- function(col) grepl("^(CO_|ID_)", col)
 
 coerce_col <- function(col, x) {
-  if (col == "NU_ANO") return(suppressWarnings(as.integer(x)))
+  if (col == "NU_ANO")        return(suppressWarnings(as.integer(x)))
+  if (col == "TX_HR_INICIAL") return(suppressWarnings(as.integer(x)))
   if (is_code(col))    return(trimws(as.character(x)))
   if (startsWith(col, "IN_") || startsWith(col, "TP_"))
     return(suppressWarnings(as.integer(x)))
