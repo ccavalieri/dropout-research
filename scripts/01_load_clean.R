@@ -13,7 +13,7 @@
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 INPUT_DIR  <- "/Users/cc9/Documents/GitHub/dropout-research/data/synthetic"   
 OUTPUT_DIR <- "/Users/cc9/Documents/GitHub/dropout-research/data/clean"
-YEARS      <- 2019:2024
+YEARS      <- 2017:2024
 
 # Plausible age range
 AGE_MIN <- 0L

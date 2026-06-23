@@ -22,8 +22,14 @@
 # ─── CONFIGURATION ───────────────────────────────────────────────────────────
 PROFILE_DIR          <- "data/1st_extraction"
 OUTPUT_DIR           <- "data/synthetic"
-YEARS                <- 2019:2024
+YEARS                <- 2017:2024  # 2017-2018 added as history lookback
 TARGET_N             <- 1000L      # enrolled students per year
+
+# The profile only covers 2019-2024; years outside it borrow the nearest
+# profiled year for schema and marginal distributions (the real year is still
+# stamped on NU_ANO, ages and ids).
+PROFILE_YEARS        <- 2019:2024
+pyear <- function(yr) if (yr %in% PROFILE_YEARS) yr else min(PROFILE_YEARS)
 N_SCHOOLS            <- max(10L, ceiling(TARGET_N / 33L))
 N_TURMAS_PER_SCHOOL  <- 7L
 SEED                 <- 42L
@@ -72,13 +78,14 @@ build_universe_and_panel <- function(profile, years, target_n,
     if (n <= 0L) return(integer(0))
     ids  <- as.integer(id_start) + counter + seq_len(n) - 1L
     counter <<- counter + n
-    age0 <- pmax(0L, round(sample_num(profile, "BAS_MATRICULA", entry_year,
+    pyr  <- pyear(entry_year)
+    age0 <- pmax(0L, round(sample_num(profile, "BAS_MATRICULA", pyr,
                                       "NU_IDADE_REFERENCIA", n)))
     dt <- data.table(CO_PESSOA_FISICA = ids,
                      birth_year       = entry_year - age0,
                      frailty          = rnorm(n, 0, frailty_sd))
     for (col in invariant_cols) {
-      dt[, (col) := sample_cat(profile, "BAS_MATRICULA", entry_year, col, n)]
+      dt[, (col) := sample_cat(profile, "BAS_MATRICULA", pyr, col, n)]
     }
     U <<- rbind(U, dt, fill = TRUE)
     ids
@@ -163,17 +170,19 @@ gen_column <- function(col, dtype, tbl, yr, n, ctx) {
 
 # ─── TABLE BUILDER ───────────────────────────────────────────────────────────
 gen_table_year <- function(tbl, yr, n, ctx) {
-  schema_rows <- profile$schema[.(tbl, yr), nomatch = NULL][order(position)]
+  pyr <- pyear(yr)
+  schema_rows <- profile$schema[.(tbl, pyr), nomatch = NULL][order(position)]
   if (nrow(schema_rows) == 0)
-    stop(sprintf("No schema rows for %s %d", tbl, yr))
+    stop(sprintf("No schema rows for %s %d", tbl, pyr))
 
   out <- data.table(.row_id = seq_len(n))
   for (i in seq_len(nrow(schema_rows))) {
     col <- schema_rows$column[i]
     set(out, j = col, value = gen_column(col, schema_rows$dtype[i],
-                                         tbl, yr, n, ctx))
+                                         tbl, pyr, n, ctx))
   }
   out[, .row_id := NULL]
+  if ("NU_ANO" %in% names(out)) set(out, j = "NU_ANO", value = rep(yr, n))
   setcolorder(out, schema_rows$column)
   out
 }
@@ -202,14 +211,14 @@ generate_year <- function(yr) {
   write_year(escola, "BAS_ESCOLA", yr)
 
   # 2. BAS_TURMA
-  turma_id_pool <- gen_id_seq((yr - 2019L) * 1e7 + 1L, n_turmas)
+  turma_id_pool <- gen_id_seq((yr - min(YEARS)) * 1e7 + 1L, n_turmas)
   turma_school  <- rep(schools$CO_ENTIDADE, each = N_TURMAS_PER_SCHOOL)
   ctx_trm <- list(ID_TURMA = turma_id_pool, CO_ENTIDADE = turma_school)
   turma   <- gen_table_year("BAS_TURMA", yr, n_turmas, ctx_trm)
   write_year(turma, "BAS_TURMA", yr)
 
   # 3. BAS_MATRICULA — one row per enrolled student
-  matric_id_pool  <- gen_id_seq((yr - 2019L) * 1e8 + 1L, n_matric)
+  matric_id_pool  <- gen_id_seq((yr - min(YEARS)) * 1e8 + 1L, n_matric)
   matric_turma    <- sample(turma_id_pool, n_matric, replace = TRUE)
   turma_to_school <- setNames(turma_school, as.character(turma_id_pool))
   matric_school   <- unname(turma_to_school[as.character(matric_turma)])
@@ -230,11 +239,12 @@ generate_year <- function(yr) {
   matric <- gen_table_year("BAS_MATRICULA", yr, n_matric, ctx_mat)
   write_year(matric, "BAS_MATRICULA", yr)
 
-  # 4. BAS_SITUACAO (skip 2024 — no year-end outcome / no t+1)
-  if (yr <= 2023L) {
+  # 4. BAS_SITUACAO (skip the last year — no year-end outcome / no t+1)
+  if (yr < max(YEARS)) {
     is_leaver   <- ids %in% panel$leavers[[as.character(yr)]]
     is_deceased <- ids %in% panel$deceased[[as.character(yr)]]
-    sit_situacao <- sample_situacao_panel(profile, yr, matric$TP_ETAPA_ENSINO,
+    sit_situacao <- sample_situacao_panel(profile, pyear(yr),
+                                          matric$TP_ETAPA_ENSINO,
                                           is_leaver, is_deceased)
     ctx_sit <- list(
       CO_PESSOA_FISICA = matric$CO_PESSOA_FISICA,
@@ -269,9 +279,10 @@ for (yr in YEARS) {
   trm <- read_synth("BAS_TURMA",     yr)
   mat <- read_synth("BAS_MATRICULA", yr)
 
-  exp_esc <- profile$schema[.("BAS_ESCOLA",    yr)][order(position)]$column
-  exp_trm <- profile$schema[.("BAS_TURMA",     yr)][order(position)]$column
-  exp_mat <- profile$schema[.("BAS_MATRICULA", yr)][order(position)]$column
+  pyr <- pyear(yr)
+  exp_esc <- profile$schema[.("BAS_ESCOLA",    pyr)][order(position)]$column
+  exp_trm <- profile$schema[.("BAS_TURMA",     pyr)][order(position)]$column
+  exp_mat <- profile$schema[.("BAS_MATRICULA", pyr)][order(position)]$column
 
   stopifnot(identical(names(esc), exp_esc))
   stopifnot(identical(names(trm), exp_trm))
@@ -281,9 +292,9 @@ for (yr in YEARS) {
   stopifnot(all(mat$ID_TURMA    %in% trm$ID_TURMA))
   stopifnot(all(mat$CO_ENTIDADE %in% esc$CO_ENTIDADE))
 
-  if (yr <= 2023L) {
+  if (yr < max(YEARS)) {
     sit <- read_synth("BAS_SITUACAO", yr)
-    exp_sit <- profile$schema[.("BAS_SITUACAO", yr)][order(position)]$column
+    exp_sit <- profile$schema[.("BAS_SITUACAO", pyr)][order(position)]$column
     stopifnot(identical(names(sit), exp_sit))
     stopifnot(all(sit$ID_MATRICULA %in% mat$ID_MATRICULA))
 
