@@ -2,16 +2,7 @@
 # 04_model_risk.R
 #
 # Train and compare three dropout-risk models on the person-year feature matrix
-# and emit a calibrated risk score r per student-year (the input to the
-# optimization stage). Temporal split, no resampling.
-#
-#   - Logistic + LASSO (glmnet)   transparent baseline
-#   - GAM (mgcv)                  glass-box: smooths on key continuous predictors
-#   - LightGBM                    black-box; SHAP from native predcontrib
-#
-# Evaluation: AUC-ROC, AUC-PR, recall@k / precision@k, Brier + calibration.
-# Threshold chosen on validation by F-beta (beta>1). Probabilities are kept on
-# the natural class distribution so they stay calibrated for the optimizer.
+# and emit a calibrated risk score r per student-year
 #
 # Inputs:  data/features/features_{YEAR}.rds   (2019-2024)
 # Outputs: data/model/risk_{YEAR}.rds          (keys + evadiu + r per model)
@@ -26,7 +17,7 @@ TARGET       <- "evadiu"
 TRAIN_YEARS  <- 2019:2021
 VAL_YEAR     <- 2022L
 TEST_YEAR    <- 2023L
-SCORE_YEARS  <- 2019:2024          # produce r for every year (2024 unlabeled)
+SCORE_YEARS  <- 2019:2024          
 
 RECALL_KS    <- c(0.05, 0.10, 0.20)
 FBETA        <- 2                   # recall weighted over precision for the EWS
@@ -36,7 +27,7 @@ DROP_COLS <- c("CO_PESSOA_FISICA", "ID_MATRICULA", "ID_TURMA", "CO_ENTIDADE",
                "CO_UF_NASC", "CO_MUNICIPIO_NASC", "CO_PAIS_RESIDENCIA",
                "CO_UF_END", "CO_MUNICIPIO_END", "NU_ANO")
 
-# Curated GAM specification (kept interpretable, not the full feature space).
+# Curated GAM specification.
 GAM_SMOOTH  <- c("NU_IDADE_REFERENCIA", "defasagem_idade_serie",
                  "n_reprovacoes_prev", "anos_observados", "indice_infra",
                  "tamanho_escola", "tamanho_turma", "apoio_por_aluno")
@@ -97,11 +88,11 @@ panel <- rbindlist(lapply(SCORE_YEARS, function(y)
 keys     <- panel[, .(CO_PESSOA_FISICA, NU_ANO, evadiu)]
 feat_all <- setdiff(names(panel), c(DROP_COLS, TARGET))
 
-# Drop degenerate columns (constant or all-NA over the panel).
+# Drop degenerate columns
 nu <- panel[, lapply(.SD, function(x) length(unique(x[!is.na(x)]))), .SDcols = feat_all]
 feat_all <- feat_all[as.integer(nu[1]) > 1]
 
-# Classify: factors = character or TP_ codes; the rest numeric.
+# Classify: factors = character or TP_ codes
 is_factor <- function(col) is.character(panel[[col]]) || startsWith(col, "TP_")
 factor_cols  <- feat_all[vapply(feat_all, is_factor, logical(1))]
 numeric_cols <- setdiff(feat_all, factor_cols)
@@ -111,8 +102,6 @@ val_idx   <- panel$NU_ANO == VAL_YEAR     & !is.na(panel$evadiu)
 test_idx  <- panel$NU_ANO == TEST_YEAR    & !is.na(panel$evadiu)
 
 # ─── PREPROCESSING ───────────────────────────────────────────────────────────
-# Factors: NA becomes an explicit "MISSING" level (levels fixed on full panel).
-# Numerics: median imputation (from training) plus a missingness flag.
 D <- copy(panel[, ..feat_all])
 for (col in factor_cols)
   set(D, j = col, value = addNA(factor(D[[col]]), ifany = TRUE))
@@ -149,7 +138,7 @@ gam_fit <- bam(form, family = binomial, data = Dg[train_idx], discrete = TRUE)
 p_gam <- as.numeric(predict(gam_fit, newdata = Dg, type = "response"))
 
 # ─── LIGHTGBM ────────────────────────────────────────────────────────────────
-# Native categoricals (integer-coded, NA kept) and native missing handling.
+# Native categoricals and native missing handling.
 Dl <- copy(panel[, ..feat_all])
 for (col in factor_cols) set(Dl, j = col, value = as.integer(factor(Dl[[col]])))
 Ml <- as.matrix(Dl)
