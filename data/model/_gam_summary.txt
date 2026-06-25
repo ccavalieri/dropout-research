@@ -1,0 +1,52 @@
+
+Family: binomial 
+Link function: logit 
+
+Formula:
+y ~ s(NU_IDADE_REFERENCIA, k = 10) + s(defasagem_idade_serie, 
+    k = 10) + n_reprovacoes_prev + s(anos_observados, k = 4) + 
+    s(indice_infra, k = 10) + s(tamanho_escola, k = 10) + s(tamanho_turma, 
+    k = 10) + s(apoio_por_aluno, k = 10) + TP_SEXO + TP_COR_RACA + 
+    TP_DEPENDENCIA + TP_LOCALIZACAO + turno + flag_defasado + 
+    reprovou_ano_ant + abandono_previo + IN_NECESSIDADE_ESPECIAL + 
+    IN_TRANSFERIDO
+
+Parametric coefficients:
+                        Estimate Std. Error z value Pr(>|z|)  
+(Intercept)             -0.10766    0.51986  -0.207   0.8359  
+n_reprovacoes_prev      -0.67001    0.37632  -1.780   0.0750 .
+TP_SEXO2                -0.13716    0.14745  -0.930   0.3522  
+TP_COR_RACA1            -0.18321    0.18628  -0.984   0.3254  
+TP_COR_RACA2            -0.16351    0.42668  -0.383   0.7016  
+TP_COR_RACA3            -0.08814    0.18490  -0.477   0.6336  
+TP_COR_RACA4             0.39348    1.21131   0.325   0.7453  
+TP_COR_RACA5             0.47129    0.77042   0.612   0.5407  
+TP_DEPENDENCIA2         -0.84708    0.46064  -1.839   0.0659 .
+TP_DEPENDENCIA3         -1.00037    0.41805  -2.393   0.0167 *
+TP_DEPENDENCIA4         -1.01040    0.43856  -2.304   0.0212 *
+TP_LOCALIZACAO2          0.02003    0.17186   0.117   0.9072  
+turnonoite               0.10345    0.29278   0.353   0.7238  
+turnotarde              -0.09773    0.15515  -0.630   0.5288  
+turnoMISSING            -6.87675   28.75909  -0.239   0.8110  
+flag_defasado            0.06481    0.21459   0.302   0.7626  
+reprovou_ano_ant         1.01583    0.51066   1.989   0.0467 *
+abandono_previo         -0.59851    0.37491  -1.596   0.1104  
+IN_NECESSIDADE_ESPECIAL  0.10274    0.38214   0.269   0.7880  
+IN_TRANSFERIDO          -1.02034    0.75086  -1.359   0.1742  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+                           edf Ref.df Chi.sq  p-value    
+s(NU_IDADE_REFERENCIA)   1.001  1.003 19.886 8.71e-06 ***
+s(defasagem_idade_serie) 1.001  1.002  1.286    0.257    
+s(anos_observados)       1.364  1.625  0.650    0.731    
+s(indice_infra)          1.001  1.003  0.154    0.696    
+s(tamanho_escola)        1.001  1.003  0.517    0.472    
+s(tamanho_turma)         1.001  1.003  0.990    0.321    
+s(apoio_por_aluno)       1.001  1.001  0.002    0.977    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.0278   Deviance explained = 5.39%
+fREML = 734.43  Scale est. = 1         n = 2586
