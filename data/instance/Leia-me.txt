@@ -1,0 +1,29 @@
+LEIA-ME — Instancia agregada de alocacao de intervencoes (PEE)
+Gerado em: 2026-07-07 16:00
+Ano de referencia: 2024   |   Escopo: nacional
+
+OBJETIVO
+Tabelas agregadas por turma e por escola com a massa de risco de evasao
+(soma do risco estimado dos alunos), para uso como instancia do problema de
+alocacao de intervencoes. Nenhum dado individual e extraido.
+
+BASES E CRUZAMENTOS
+Censo Escolar (BAS_MATRICULA, BAS_SITUACAO, BAS_TURMA, BAS_ESCOLA) ->
+rotulo de evasao e features por aluno-ano -> modelo de risco (r por aluno) ->
+agregacao por ID_TURMA e por CO_ENTIDADE.
+
+CONTEUDO
+turmas.csv : uma linha por turma; n_t (n alunos), R_t = soma do risco
+  (3 modelos: logit/gam/lgb), etapa. Vinculada a escola por escola_id.
+escolas.csv: uma linha por escola; n_sigma, R_sigma (3 modelos), dependencia,
+  regiao, grupo de equidade, localizacao, indice de infraestrutura.
+
+PROTECAO DE DADOS
+- Unidade amostral minima: 10 informantes por celula (turma/escola).
+- Turmas suprimidas (n_t < 10): 209 de 211.
+- Escolas suprimidas (n_sigma < 10): 0 de 31.
+- Identificadores de escola e turma sao anonimizados (codigos sequenciais).
+- Somente agregados (somas e contagens); sem valores individuais, maximos,
+  minimos ou rankings que identifiquem instituicoes.
+
+Tabelas: turmas (2 linhas x 7 cols), escolas (31 linhas x 10 cols).
