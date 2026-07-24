@@ -81,128 +81,140 @@ eval_model <- function(y, p, model, year) {
   out
 }
 
-# ─── LOAD PANEL ──────────────────────────────────────────────────────────────
-panel <- rbindlist(lapply(SCORE_YEARS, function(y)
+# Memory strategy: train once on the labeled years, then score one year at a
+# time (never binds all years, never builds a full-panel matrix). glmnet is
+# sparse; LightGBM keeps native NA/categorical (dense, bounded to labeled years).
+
+# ─── LOAD LABELED YEARS + PREPROCESSING SPEC ─────────────────────────────────
+LABELED_YEARS <- sort(unique(c(TRAIN_YEARS, VAL_YEAR, TEST_YEAR)))
+lab <- rbindlist(lapply(LABELED_YEARS, function(y)
   readRDS(file.path(FEATURES_DIR, sprintf("features_%d.rds", y)))), fill = TRUE)
 
-keys     <- panel[, .(CO_PESSOA_FISICA, NU_ANO, evadiu)]
-feat_all <- setdiff(names(panel), c(DROP_COLS, TARGET))
-
-# Drop degenerate columns
-nu <- panel[, lapply(.SD, function(x) length(unique(x[!is.na(x)]))), .SDcols = feat_all]
+feat_all <- setdiff(names(lab), c(DROP_COLS, TARGET))
+nu <- lab[, lapply(.SD, function(x) length(unique(x[!is.na(x)]))), .SDcols = feat_all]
 feat_all <- feat_all[as.integer(nu[1]) > 1]
-
-# Classify: factors = character or TP_ codes
-is_factor <- function(col) is.character(panel[[col]]) || startsWith(col, "TP_")
+is_factor <- function(col) is.character(lab[[col]]) || startsWith(col, "TP_")
 factor_cols  <- feat_all[vapply(feat_all, is_factor, logical(1))]
 numeric_cols <- setdiff(feat_all, factor_cols)
 
-train_idx <- panel$NU_ANO %in% TRAIN_YEARS & !is.na(panel$evadiu)
-val_idx   <- panel$NU_ANO == VAL_YEAR     & !is.na(panel$evadiu)
-test_idx  <- panel$NU_ANO == TEST_YEAR    & !is.na(panel$evadiu)
+train_mask <- lab$NU_ANO %in% TRAIN_YEARS & !is.na(lab$evadiu)
+val_mask   <- lab$NU_ANO == VAL_YEAR     & !is.na(lab$evadiu)
+test_mask  <- lab$NU_ANO == TEST_YEAR    & !is.na(lab$evadiu)
 
-# ─── PREPROCESSING ───────────────────────────────────────────────────────────
-D <- copy(panel[, ..feat_all])
-for (col in factor_cols)
-  set(D, j = col, value = addNA(factor(D[[col]]), ifany = TRUE))
-for (col in factor_cols)
-  levels(D[[col]])[is.na(levels(D[[col]]))] <- "MISSING"
+# Fixed factor levels (with MISSING) and train medians, so any year preprocesses
+# to the same columns.
+lvls <- lapply(factor_cols, function(c) {
+  L <- levels(addNA(factor(lab[[c]]), ifany = TRUE)); L[is.na(L)] <- "MISSING"; L })
+names(lvls) <- factor_cols
+meds <- vapply(numeric_cols, function(c) median(lab[[c]][train_mask], na.rm = TRUE), numeric(1))
+miss_cols <- numeric_cols[vapply(numeric_cols, function(c) anyNA(lab[[c]]), logical(1))]
 
-for (col in numeric_cols) {
-  x <- D[[col]]
-  if (anyNA(x)) {
-    D[[paste0(col, "_isna")]] <- as.integer(is.na(x))
-    med <- median(x[train_idx], na.rm = TRUE)
-    set(D, which(is.na(x)), col, med)
+# Imputed design (fixed factor levels + isna flags) for glmnet / GAM.
+apply_prep <- function(dt) {
+  D <- copy(dt[, ..feat_all])
+  for (c in factor_cols) {
+    v <- as.character(D[[c]]); v[is.na(v) | !v %in% lvls[[c]]] <- "MISSING"
+    set(D, j = c, value = factor(v, levels = lvls[[c]]))
   }
+  for (c in numeric_cols) {
+    x <- D[[c]]
+    if (c %in% miss_cols) set(D, j = paste0(c, "_isna"), value = as.integer(is.na(x)))
+    if (anyNA(x)) set(D, which(is.na(x)), c, meds[[c]])
+  }
+  D
+}
+# LightGBM matrix: raw values (native NA), factors as consistent integer codes.
+lgb_matrix <- function(dt) {
+  Dl <- copy(dt[, ..feat_all])
+  for (c in factor_cols)
+    set(Dl, j = c, value = as.integer(factor(as.character(Dl[[c]]), levels = lvls[[c]])))
+  as.matrix(Dl)
 }
 
-# ─── GLMNET (logistic + LASSO) ───────────────────────────────────────────────
-X <- sparse.model.matrix(~ . - 1, data = D)
-y_train <- panel$evadiu[train_idx]
+# ─── TRAIN (labeled years only) ──────────────────────────────────────────────
+Dlab <- apply_prep(lab)
+Xlab <- sparse.model.matrix(~ . - 1, data = Dlab)
+Mlab <- lgb_matrix(lab)
+xcols <- colnames(Xlab)
 
-cvfit <- cv.glmnet(X[train_idx, ], y_train, family = "binomial",
-                   type.measure = "auc")
-p_logit <- as.numeric(predict(cvfit, X, s = "lambda.min", type = "response"))
+cvfit <- cv.glmnet(Xlab[train_mask, ], lab$evadiu[train_mask],
+                   family = "binomial", type.measure = "auc")
 
-# ─── GAM (mgcv) ──────────────────────────────────────────────────────────────
 gam_smooth <- intersect(GAM_SMOOTH, numeric_cols)
 gam_param  <- intersect(GAM_PARAM, feat_all)
-k_for <- function(col) min(10L, length(unique(D[[col]][train_idx])) - 1L)
+k_for <- function(col) min(10L, length(unique(Dlab[[col]][train_mask])) - 1L)
 sm <- vapply(gam_smooth, function(v)
   if (k_for(v) >= 3) sprintf("s(%s, k=%d)", v, k_for(v)) else v, character(1))
-form <- as.formula(paste("y ~", paste(c(sm, sprintf("`%s`", gam_param)),
-                                      collapse = " + ")))
-Dg <- copy(D); Dg[, y := panel$evadiu]
-gam_fit <- bam(form, family = binomial, data = Dg[train_idx], discrete = TRUE)
-p_gam <- as.numeric(predict(gam_fit, newdata = Dg, type = "response"))
+form <- as.formula(paste("evadiu ~", paste(c(sm, sprintf("`%s`", gam_param)), collapse = " + ")))
+Dg <- copy(Dlab); Dg[, evadiu := lab$evadiu]
+gam_fit <- bam(form, family = binomial, data = Dg[train_mask], discrete = TRUE)
 
-# ─── LIGHTGBM ────────────────────────────────────────────────────────────────
-# Native categoricals and native missing handling.
-Dl <- copy(panel[, ..feat_all])
-for (col in factor_cols) set(Dl, j = col, value = as.integer(factor(Dl[[col]])))
-Ml <- as.matrix(Dl)
-
-dtrain <- lgb.Dataset(Ml[train_idx, ], label = panel$evadiu[train_idx],
+dtrain <- lgb.Dataset(Mlab[train_mask, ], label = lab$evadiu[train_mask],
                       categorical_feature = factor_cols)
-dval   <- lgb.Dataset.create.valid(dtrain, Ml[val_idx, ],
-                                   label = panel$evadiu[val_idx])
+dval <- lgb.Dataset.create.valid(dtrain, Mlab[val_mask, ], label = lab$evadiu[val_mask])
 lgb_fit <- lgb.train(
   params = list(objective = "binary", metric = "auc", learning_rate = 0.05,
                 num_leaves = 31, min_data_in_leaf = 20, verbose = -1),
-  data = dtrain, valids = list(val = dval), nrounds = 500,
-  early_stopping_rounds = 30)
-p_lgb <- predict(lgb_fit, Ml, type = "response")
+  data = dtrain, valids = list(val = dval), nrounds = 500, early_stopping_rounds = 30)
 
-# ─── EVALUATION (test year) ──────────────────────────────────────────────────
-preds <- list(logit = p_logit, gam = p_gam, lgb = p_lgb)
-yte   <- panel$evadiu[test_idx]
+# ─── EVALUATE (test) + THRESHOLD (val) + SHAP ────────────────────────────────
+pv <- list(logit = as.numeric(predict(cvfit, Xlab[val_mask, ], s = "lambda.min", type = "response")),
+           gam   = as.numeric(predict(gam_fit, Dlab[val_mask], type = "response")),
+           lgb   = predict(lgb_fit, Mlab[val_mask, ], type = "response"))
+pt <- list(logit = as.numeric(predict(cvfit, Xlab[test_mask, ], s = "lambda.min", type = "response")),
+           gam   = as.numeric(predict(gam_fit, Dlab[test_mask], type = "response")),
+           lgb   = predict(lgb_fit, Mlab[test_mask, ], type = "response"))
+yte <- lab$evadiu[test_mask]; yval <- lab$evadiu[val_mask]
 
-metrics <- rbindlist(lapply(names(preds), function(m)
-  eval_model(yte, preds[[m]][test_idx], m, TEST_YEAR)), fill = TRUE)
-calib <- rbindlist(lapply(names(preds), function(m)
-  calibration_bins(yte, preds[[m]][test_idx], m, TEST_YEAR)), fill = TRUE)
+metrics <- rbindlist(lapply(names(pt), function(m) eval_model(yte, pt[[m]], m, TEST_YEAR)), fill = TRUE)
+calib <- rbindlist(lapply(names(pt), function(m) calibration_bins(yte, pt[[m]], m, TEST_YEAR)), fill = TRUE)
 
-# ─── THRESHOLD (F-beta on validation, applied to test) ───────────────────────
 pick_threshold <- function(y, p, beta) {
-  ths <- sort(unique(p))
   best <- 0; best_f <- -1
-  for (th in ths) {
+  for (th in sort(unique(p))) {
     pred <- p >= th
     tp <- sum(pred & y == 1); fp <- sum(pred & y == 0); fn <- sum(!pred & y == 1)
-    prec <- if (tp + fp > 0) tp / (tp + fp) else 0
-    rec  <- if (tp + fn > 0) tp / (tp + fn) else 0
-    f <- if (prec + rec > 0) (1 + beta^2) * prec * rec / (beta^2 * prec + rec) else 0
+    prec <- if (tp + fp > 0) tp/(tp+fp) else 0; rec <- if (tp + fn > 0) tp/(tp+fn) else 0
+    f <- if (prec + rec > 0) (1+beta^2)*prec*rec/(beta^2*prec+rec) else 0
     if (!is.na(f) && f > best_f) { best_f <- f; best <- th }
   }
   best
 }
-thr <- rbindlist(lapply(names(preds), function(m) {
-  th <- pick_threshold(panel$evadiu[val_idx], preds[[m]][val_idx], FBETA)
-  pr <- preds[[m]][test_idx] >= th
-  data.table(model = m, threshold = th,
-             recall = sum(pr & yte == 1) / sum(yte == 1),
-             precision = if (sum(pr) > 0) sum(pr & yte == 1) / sum(pr) else NA,
-             flagged = sum(pr))
-}))
+thr <- rbindlist(lapply(names(pt), function(m) {
+  th <- pick_threshold(yval, pv[[m]], FBETA); pr <- pt[[m]] >= th
+  data.table(model = m, threshold = th, recall = sum(pr & yte==1)/sum(yte==1),
+             precision = if (sum(pr) > 0) sum(pr & yte==1)/sum(pr) else NA, flagged = sum(pr)) }))
 
-# ─── EXPLAINABILITY ──────────────────────────────────────────────────────────
-# LightGBM: global importance from native SHAP (mean |contribution|).
-shap <- predict(lgb_fit, Ml[test_idx, ], type = "contrib")
-shap_imp <- data.table(feature = c(colnames(Ml), "BIAS"),
-                       mean_abs_shap = colMeans(abs(shap)))[feature != "BIAS"][
-                       order(-mean_abs_shap)]
+shap <- predict(lgb_fit, Mlab[test_mask, ], type = "contrib")
+shap_imp <- data.table(feature = c(colnames(Mlab), "BIAS"),
+                       mean_abs_shap = colMeans(abs(shap)))[feature != "BIAS"][order(-mean_abs_shap)]
 fwrite(shap_imp, file.path(OUTPUT_DIR, "_lgb_importance.csv"), sep = ";", bom = TRUE)
 capture.output(summary(gam_fit), file = file.path(OUTPUT_DIR, "_gam_summary.txt"))
-
-# ─── OUTPUTS ─────────────────────────────────────────────────────────────────
-risk <- cbind(keys, r_logit = p_logit, r_gam = p_gam, r_lgb = p_lgb)
-for (y in SCORE_YEARS)
-  saveRDS(risk[NU_ANO == y], file.path(OUTPUT_DIR, sprintf("risk_%d.rds", y)))
-
 fwrite(metrics, file.path(OUTPUT_DIR, "_metrics.csv"),     sep = ";", bom = TRUE, na = "")
 fwrite(calib,   file.path(OUTPUT_DIR, "_calibration.csv"), sep = ";", bom = TRUE, na = "")
 fwrite(thr,     file.path(OUTPUT_DIR, "_threshold.csv"),   sep = ";", bom = TRUE, na = "")
+saveRDS(gam_fit, file.path(OUTPUT_DIR, "model_gam.rds"))   # report_A plots its shapes
+
+rm(lab, Dlab, Xlab, Mlab, Dg, dtrain, dval); gc(verbose = FALSE)
+
+# ─── SCORE ONE YEAR AT A TIME ────────────────────────────────────────────────
+for (y in SCORE_YEARS) {
+  fy <- readRDS(file.path(FEATURES_DIR, sprintf("features_%d.rds", y)))
+  Dy <- apply_prep(fy)
+  Xy <- sparse.model.matrix(~ . - 1, data = Dy)
+  miss <- setdiff(xcols, colnames(Xy))
+  if (length(miss))
+    Xy <- cbind(Xy, Matrix(0, nrow(Xy), length(miss), sparse = TRUE, dimnames = list(NULL, miss)))
+  Xy <- Xy[, xcols, drop = FALSE]
+  My <- lgb_matrix(fy)
+  saveRDS(data.table(CO_PESSOA_FISICA = fy$CO_PESSOA_FISICA, NU_ANO = y, evadiu = fy$evadiu,
+                     r_logit = as.numeric(predict(cvfit, Xy, s = "lambda.min", type = "response")),
+                     r_gam   = as.numeric(predict(gam_fit, Dy, type = "response")),
+                     r_lgb   = predict(lgb_fit, My, type = "response")),
+          file.path(OUTPUT_DIR, sprintf("risk_%d.rds", y)))
+  rm(fy, Dy, Xy, My); gc(verbose = FALSE)
+  message("  scored ", y)
+}
 
 message("\n=== Test-year metrics (", TEST_YEAR, ") ===")
 print(metrics[, .(model, auc_roc = round(auc_roc, 3), auc_pr = round(auc_pr, 3),

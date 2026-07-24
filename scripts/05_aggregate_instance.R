@@ -4,10 +4,6 @@
 # Aggregate the per-student risk into the optimization instance at the turma and
 # school levels, and write the SEDAP extraction bundle (CSV tables + Leia-me).
 #
-# The optimizer needs r only through R_t = sum of risk over a turma's students,
-# so nothing individual leaves: rows are aggregates (sums/counts), ids are
-# anonymized, and turmas/schools with fewer than MIN_CELL students are dropped.
-#
 # Inputs:  data/model/risk_{YEAR}.rds       (r per student-year)
 #          data/features/features_{YEAR}.rds (turma/school keys per student)
 #          data/clean/{BAS_ESCOLA,BAS_TURMA}_{YEAR}.rds
@@ -19,8 +15,8 @@ RISK_DIR     <- "data/model"
 FEATURES_DIR <- "data/features"
 CLEAN_DIR    <- "data/clean"
 OUTPUT_DIR   <- "data/instance"
-YEAR         <- 2024L          # allocation year (risk-only; parameterize freely)
-MIN_CELL     <- 10L            # SEDAP minimum informants per cell (school/coorte)
+YEAR         <- 2024L          
+MIN_CELL     <- 10L            # SEDAP minimum informants per cell
 MODELS       <- c("logit", "gam", "lgb")
 
 # Scope presets (filter on the SCHOOL's location/network). Real INEP/IBGE codes,

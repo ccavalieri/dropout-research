@@ -3,7 +3,7 @@ Family: binomial
 Link function: logit 
 
 Formula:
-y ~ s(NU_IDADE_REFERENCIA, k = 10) + s(defasagem_idade_serie, 
+evadiu ~ s(NU_IDADE_REFERENCIA, k = 10) + s(defasagem_idade_serie, 
     k = 10) + n_reprovacoes_prev + s(anos_observados, k = 4) + 
     s(indice_infra, k = 10) + s(tamanho_escola, k = 10) + s(tamanho_turma, 
     k = 10) + s(apoio_por_aluno, k = 10) + TP_SEXO + TP_COR_RACA + 

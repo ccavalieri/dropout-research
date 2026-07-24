@@ -1,0 +1,86 @@
+# Leia-me — Solicitacao de extracao de resultados
+
+**Projeto:** Predicao e Otimizacao de Intervencoes para Reducao da Evasao Escolar no Brasil  
+**Pesquisador titular:** Carlos Eduardo Cavalieri Furtado  
+**Orientador:** Prof. Dr. Santiago Valdes Ravelo  
+**Instituicao:** Universidade Estadual de Campinas (UNICAMP) - Instituto de Computacao  
+**Processo SEI:** 23036.001376/2026-77  
+**Data:** 15/07/2026  
+**Ano de referencia da instancia:** 2024  
+**Recorte:** nacional
+
+## 1. Objetivo
+
+Solicita-se a liberacao de tabelas e figuras **agregadas**, produzidas a partir
+de modelagem estatistica sobre os microdados, para subsidiar as etapas de analise
+e de otimizacao previstas no projeto. Os documentos nao contem dados
+individualizados nem fragmentos das bases consultadas.
+
+## 2. Bases de dados e periodo de referencia
+
+Censo Escolar da Educacao Basica, edicoes **2017 a 2024**: BAS_ESCOLA, BAS_TURMA,
+BAS_MATRICULA e BAS_SITUACAO.
+
+## 3. Cruzamentos realizados
+
+- BAS_SITUACAO x BAS_MATRICULA (por ID_MATRICULA) e BAS_MATRICULA x BAS_TURMA
+  (por ID_TURMA) x BAS_ESCOLA (por CO_ENTIDADE), compondo o registro aluno-ano;
+- encadeamento longitudinal por CO_PESSOA_FISICA (ano t e t+1) para a definicao do
+  desfecho de evasao;
+- estimacao de um modelo de risco por aluno-ano e **agregacao** por turma
+  (ID_TURMA), por escola (CO_ENTIDADE) e por estratos observaveis (etapa,
+  dependencia, regiao, entre outros).
+
+## 4. Documentos solicitados (14 tabelas, 7 figuras)
+
+### 4.1 Instancia de alocacao (.csv)
+
+| Nº | Arquivo | Conteúdo |
+|---|---|---|
+| 01 | `instance/escolas.csv` | Massa de risco, numero de alunos e atributos agregados, por escola |
+| 02 | `instance/turmas.csv` | Massa de risco (soma do risco estimado) e numero de alunos, por turma |
+
+### 4.2 Tabelas de analise (.csv)
+
+| Nº | Arquivo | Conteúdo |
+|---|---|---|
+| 01 | `tables/desc_evasao_por_ano.csv` | Taxa de evasao agregada por ano |
+| 02 | `tables/desc_evasao_por_faixa_idade.csv` | Taxa de evasao agregada por faixa idade |
+| 03 | `tables/desc_evasao_por_flag_defasado.csv` | Taxa de evasao agregada por flag defasado |
+| 04 | `tables/desc_evasao_por_regiao.csv` | Taxa de evasao agregada por regiao |
+| 05 | `tables/desc_evasao_por_tp_cor_raca.csv` | Taxa de evasao agregada por tp cor raca |
+| 06 | `tables/desc_evasao_por_tp_dependencia.csv` | Taxa de evasao agregada por tp dependencia |
+| 07 | `tables/desc_evasao_por_tp_etapa_ensino.csv` | Taxa de evasao agregada por tp etapa ensino |
+| 08 | `tables/desc_evasao_por_tp_sexo.csv` | Taxa de evasao agregada por tp sexo |
+| 09 | `tables/desc_evasao_por_tp_zona_residencial.csv` | Taxa de evasao agregada por tp zona residencial |
+| 10 | `tables/eval_calibracao.csv` | Calibracao (risco previsto medio x evasao observada) por modelo |
+| 11 | `tables/eval_metrics.csv` | Metricas de desempenho dos modelos no ano de teste |
+| 12 | `tables/fairness_por_estrato.csv` | Desempenho do modelo por estrato observavel (regiao, cor/raca, dependencia) |
+
+### 4.3 Figuras (.pdf)
+
+| Nº | Arquivo | Conteúdo |
+|---|---|---|
+| 01 | `figures/desc_evasao_por_ano.pdf` | Taxa de evasao agregada por ano |
+| 02 | `figures/desc_evasao_por_defasado.pdf` | Taxa de evasao agregada por defasado |
+| 03 | `figures/eval_calibracao.pdf` | Calibracao (risco previsto medio x evasao observada) por modelo |
+| 04 | `figures/eval_ganhos.pdf` | Curva de ganhos por modelo |
+| 05 | `figures/eval_roc.pdf` | Curva ROC por modelo |
+| 06 | `figures/interp_gam_shapes.pdf` | Funcoes de forma das variaveis continuas (GAM) |
+| 07 | `figures/interp_shap_importance.pdf` | Importancia media de variaveis (SHAP, LightGBM) |
+
+## 5. Protecao de dados e unidade amostral minima
+
+- Todas as celulas liberadas correspondem a agregacoes com **pelo menos 3
+  informantes** (tabulacoes ate o nivel de municipio) e **pelo menos 10
+  informantes** (niveis de escola, turma e coorte). As linhas que nao atingiam
+  esse minimo foram **omitidas**, de modo que nenhuma tabela liberada contem
+  celulas abaixo do limite.
+- Nesta geracao: Instancia (ano 2024, escopo nacional): turmas 211->2, escolas 31->31 (suprimidas por n<10).
+- Os documentos contem **exclusivamente resultados agregados** (somas, contagens
+  e taxas) de modelagem estatistica; nao ha dados pessoais, dados individualizados,
+  valores maximos ou minimos de distribuicoes, nem rankings de unidades ou
+  variaveis que possibilitem identificacao.
+- Os identificadores de escola e de turma foram substituidos por codigos
+  sequenciais, sem correspondencia com os codigos de origem.
+- Arquivos nao comprimidos; tabelas em .csv e figuras em .pdf, individualizadas.
