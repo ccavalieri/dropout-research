@@ -107,7 +107,7 @@ is_code <- function(col) grepl("^(CO_|ID_)", col)
 coerce_col <- function(col, x) {
   if (col == "NU_ANO")        return(suppressWarnings(as.integer(x)))
   if (col == "TX_HR_INICIAL") return(suppressWarnings(as.integer(x)))
-  if (is_code(col))    return(trimws(as.character(x)))
+  if (is_code(col))    return(as.character(x))   # fread ja faz strip.white; trimws era o gargalo
   if (startsWith(col, "IN_") || startsWith(col, "TP_"))
     return(suppressWarnings(as.integer(x)))
   if (startsWith(col, "QT_") || startsWith(col, "NU_"))
@@ -136,27 +136,26 @@ apply_sentinels <- function(dt, tbl, config) {
 }
 
 # ─── COLUMN SUMMARY ──────────────────────────────────────────────────────────
-# Missingness for every column; min/max/mean/median/p1/p99 for numeric columns
+# Missingness for every column; min/max/mean for numeric columns (no quantiles:
+# the sort dominates runtime on the large tables and min/max is enough to spot
+# columns needing a sentinel/validity rule).
 col_summary <- function(tbl, yr, col, x) {
   n <- length(x); nm <- sum(is.na(x))
   out <- data.table(table = tbl, year = yr, column = col, n = n,
                     n_missing = nm, pct_missing = round(100 * nm / max(n, 1), 3))
   if (is.numeric(x)) {
     v <- x[!is.na(x)]
-    if (length(v) > 0) {
-      qs <- quantile(v, c(0.01, 0.5, 0.99), names = FALSE)
-      out[, `:=`(min = min(v), max = max(v), mean = round(mean(v), 4),
-                 median = qs[2], p1 = qs[1], p99 = qs[3])]
-    }
+    if (length(v) > 0)
+      out[, `:=`(min = min(v), max = max(v), mean = round(mean(v), 4))]
   }
   out
 }
 
 # ─── FILE DISCOVERY ──────────────────────────────────────────────────────────
 find_file <- function(tbl, yr) {
-  pat  <- sprintf("%s.*%d.*\\.csv$", tbl, yr)
-  hits <- list.files(INPUT_DIR, pattern = pat, full.names = TRUE,
-                     ignore.case = TRUE)
+  all_csv <- list.files(INPUT_DIR, pattern = "\\.csv$", recursive = TRUE,
+                        full.names = TRUE, ignore.case = TRUE)
+  hits <- all_csv[grepl(sprintf("%s.*%d", tbl, yr), all_csv, ignore.case = TRUE)]
   if (length(hits)) hits[1] else NA_character_
 }
 
@@ -199,8 +198,9 @@ clean_table_year <- function(tbl, yr, path) {
     if (n_age_invalid > 0) dt[bad, NU_IDADE_REFERENCIA := NA_real_]
   }
 
-  # Drop exact-duplicate rows. Multi-enrollment rows differ by ID_MATRICULA and are kept.
-  dt <- unique(dt)
+  # Drop exact-duplicate rows. Skip the big keyed tables (ID_MATRICULA is unique
+  # there, so unique() removes nothing but is expensive).
+  if (!tbl %in% c("BAS_MATRICULA", "BAS_SITUACAO")) dt <- unique(dt)
   n_dupes <- n_in - nrow(dt)
 
   # Check join keys presence.
@@ -240,8 +240,8 @@ for (tbl in names(COLS)) {
     res <- clean_table_year(tbl, yr, path)
 
     base <- file.path(OUTPUT_DIR, sprintf("%s_%d", tbl, yr))
-    saveRDS(res$data, paste0(base, ".rds"))
-    fwrite(res$data, paste0(base, ".csv"), sep = ";", bom = TRUE, na = "")
+    # Only the .rds is consumed downstream (02/03/04); no per-table .csv is written.
+    saveRDS(res$data, paste0(base, ".rds"), compress = FALSE)
     message(sprintf("    -> %d rows x %d cols  (%d dupes removed, %d sentinels)",
                     res$report$n_out, res$report$n_cols,
                     res$report$n_dupes_removed, res$report$n_sentinel_replaced))
