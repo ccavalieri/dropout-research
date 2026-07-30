@@ -160,6 +160,34 @@ find_file <- function(tbl, yr) {
 }
 
 # ─── CLEAN ONE TABLE-YEAR ────────────────────────────────────────────────────
+# ─── CHUNKED READ (big tables) ───────────────────────────────────────────────
+# Read the large tables in line-blocks via a file connection: each block is
+# parsed together with the header, so column selection/typing is identical to a
+# whole read. Caps the read-time memory peak; the result is still the full table
+# (one .rds), so downstream is unchanged.
+CHUNK_LINES <- 2e6L
+BIG_TABLES  <- c("BAS_MATRICULA", "BAS_SITUACAO")
+
+read_selected <- function(path, present_cols, big) {
+  code_sel <- present_cols[is_code(present_cols)]
+  cc <- if (length(code_sel)) setNames(rep("character", length(code_sel)), code_sel) else NULL
+  if (!big)
+    return(fread(path, sep = ";", encoding = "UTF-8", na.strings = c("", "NA"),
+                 select = present_cols, colClasses = cc, showProgress = FALSE))
+  con <- file(path, "r"); on.exit(close(con))         # native encoding (latin1 on Windows)
+  header <- sub("^\xef\xbb\xbf", "", sub("^﻿", "", readLines(con, n = 1L, warn = FALSE)))  # drop BOM
+  parts <- list()
+  repeat {
+    lines <- readLines(con, n = CHUNK_LINES, warn = FALSE)
+    if (!length(lines)) break
+    parts[[length(parts) + 1L]] <- fread(text = c(header, lines), sep = ";",
+      na.strings = c("", "NA"), select = present_cols, colClasses = cc,
+      showProgress = FALSE)
+    if (length(lines) < CHUNK_LINES) break
+  }
+  rbindlist(parts, use.names = TRUE, fill = TRUE)
+}
+
 clean_table_year <- function(tbl, yr, path) {
   cols <- COLS[[tbl]]
 
@@ -168,12 +196,8 @@ clean_table_year <- function(tbl, yr, path) {
   present_cols <- intersect(cols, present_all)
   missing_cols <- setdiff(cols, present_all)
 
-  # Force code columns to character at read so fread never infers numeric.
-  code_present <- present_cols[is_code(present_cols)]
-  dt <- fread(path, sep = ";", encoding = "UTF-8", na.strings = c("", "NA"),
-              select = present_cols, showProgress = FALSE,
-              colClasses = setNames(rep("character", length(code_present)),
-                                    code_present))
+  # Read (big tables in line-blocks to cap the read-time memory peak).
+  dt <- read_selected(path, present_cols, big = tbl %in% BIG_TABLES)
 
   # Add absent project columns as NA so every year has the same schema.
   for (mc in missing_cols) dt[, (mc) := NA]
