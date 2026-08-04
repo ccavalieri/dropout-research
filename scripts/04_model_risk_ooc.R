@@ -92,6 +92,7 @@ message(sprintf("train rows(labeled)~%s  sample frac=%.4f  (SAMPLE_MAX=%s)",
 read_labeled <- function(y, fr) rbindlist(lapply(part_files_year(y), function(f){
   d <- readRDS(f); d <- d[!is.na(get(TARGET))]
   if (fr < 1 && nrow(d)) d <- d[sample.int(.N, round(.N * fr))]
+  drop <- intersect(DROP_COLS, names(d)); if (length(drop)) d[, (drop) := NULL]  # solta IDs pesados
   d}), fill = TRUE)
 
 # ─── BUILD TRAINING SAMPLE + SPEC ────────────────────────────────────────────
@@ -180,7 +181,9 @@ collect <- list()   # for val/test metrics
 for (y in SCORE_YEARS) {
   for (k in 0:(K_PARTS-1L)) {
     f <- part_path(FEATURES_DIR, "features", y, k); if (!file.exists(f)) next
-    d <- readRDS(f); nb <- nrow(d); res <- list()
+    d <- readRDS(f)
+    keep <- intersect(c(feat_all, "CO_PESSOA_FISICA", "evadiu"), names(d)); d <- d[, ..keep]
+    nb <- nrow(d); res <- list()
     for (s in seq(1L, nb, by = SCORE_BLK)) {
       e <- min(s + SCORE_BLK - 1L, nb); db <- d[s:e]; pr <- score_dt(db)
       res[[length(res)+1L]] <- data.table(CO_PESSOA_FISICA=db$CO_PESSOA_FISICA, NU_ANO=y,
